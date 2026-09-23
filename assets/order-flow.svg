@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="300" viewBox="0 0 1040 300" role="img" aria-labelledby="title desc">
+<title id="title">订单不确定响应处理</title><desc id="desc">持久化意图后提交。明确响应更新结果，含糊响应保留 unknown，核对证据后再更新状态。</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="#527665"/></marker></defs>
+<rect width="1040" height="300" rx="16" fill="#f5f8f5"/>
+<g font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif">
+<text x="32" y="38" font-size="20" font-weight="700" fill="#18392c">订单提交与对账</text>
+<g fill="none" stroke="#527665" stroke-width="2" marker-end="url(#arrow)"><path d="M210 99H259"/><path d="M441 99H490"/><path d="M672 99H821"/><path d="M581 129V198"/><path d="M672 229H821"/></g>
+<g fill="#fff" stroke="#afc7b5"><rect x="32" y="69" width="178" height="60" rx="10"/><rect x="263" y="69" width="178" height="60" rx="10"/><rect x="494" y="69" width="178" height="60" rx="10"/><rect x="825" y="69" width="178" height="60" rx="10"/><rect x="494" y="199" width="178" height="60" rx="10"/><rect x="825" y="199" width="178" height="60" rx="10"/></g>
+<g text-anchor="middle" font-size="17" fill="#18392c"><text x="121" y="105">持久化订单意图</text><text x="352" y="105">提交模拟订单</text><text x="583" y="105">检查远端响应</text><text x="914" y="105">记录明确结果</text><text x="583" y="235">unknown / 待对账</text><text x="914" y="235">核对订单与账户</text></g>
+<g font-size="13" fill="#516b5b"><text x="722" y="85">响应明确</text><text x="596" y="167">响应含糊</text><text x="38" y="217">证据充分：按事实更新状态</text><text x="38" y="244">证据不足：保留 unknown，不盲目重发</text></g></g></svg>

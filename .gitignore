@@ -5,6 +5,8 @@
 !assets/
 assets/*
 !assets/cover.svg
+!assets/architecture.svg
+!assets/order-flow.svg
 !docs/
 docs/*
 !docs/engineering.md
