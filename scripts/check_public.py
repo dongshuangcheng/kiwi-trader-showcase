@@ -12,6 +12,7 @@ ALLOWLIST = {
     'docs/design-notes.md', 'docs/index.html', 'docs/showcase.css',
     'docs/showcase.js', 'docs/demo-model.mjs', 'docs/favicon.svg',
     'docs/.nojekyll', 'tests/demo-model.test.mjs', 'scripts/check_public.py',
+    'docs/landing.css', 'docs/landing.js', 'docs/product-case.md',
 }
 # Inspect tracked and non-ignored files. Ignored local output is never staged implicitly.
 files = set(subprocess.check_output(

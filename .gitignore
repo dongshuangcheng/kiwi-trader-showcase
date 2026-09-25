@@ -24,3 +24,6 @@ tests/*
 !scripts/
 scripts/*
 !scripts/check_public.py
+!docs/landing.css
+!docs/landing.js
+!docs/product-case.md

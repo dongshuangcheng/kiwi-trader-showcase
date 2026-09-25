@@ -1,13 +1,14 @@
 import { stages, scenarios, createState, advance, duplicateSubmit, reconcile, freshness } from './demo-model.mjs';
 const $ = (id) => document.getElementById(id);
+const stageLabels = ['当时的信息', '研究建议', '条件检查', '记录操作', '收到反馈'];
 const stepCopy = [
- ['先确定，我们看到了什么。', '冻结行情来源、周期与时点，后续研究引用同一份快照。', '数据到达系统，不代表它就具备决策资格。'],
- ['模型给出建议，而不是订单。', '候选分析引用快照和策略版本，研究与执行权限保持分离。', '模型输出不直接触达模拟交易适配器。'],
- ['让规则，而不是信心，守住入口。', '检查行情时效、账户状态与风险条件，满足约束再继续。', '缺失与过期保持原样，不用其他时点的信息填补。'],
- ['先留下意图，再发起请求。', '在模拟请求前记录唯一意图，给重复请求与故障恢复一个稳定依据。', '持久化的意图先于远端副作用。'],
- ['明确的回执，才是明确的结果。', '记录模拟回执，并保留决策、订单意图和后续账户证据的关联。', '这里演示的是回执，不代表订单已经成交。'],
+ ['先知道，建议基于什么。', '保留当时的信息，让你之后还能回头理解：这条建议是在什么条件下产生的。', '信息看得见，也应看得懂它的来源与时效。'],
+ ['这是建议，还不是已经做了。', '把分析意见与后续操作分开表达，避免“给出了建议”被误读成“已经执行”。', '清楚说明现在走到哪一步，以及哪些事情还没发生。'],
+ ['继续之前，先说清适用条件。', '检查当前信息是否仍适用。遇到缺失或过期，保留原来的内容，同时解释为什么暂停。', '不让使用者靠猜测判断系统是否还正常。'],
+ ['先保留这次操作的上下文。', '记录正在做的事。即使后续反馈中断，也有依据核对进度，而不是让你从头再来。', '避免一次重复点击，变成一次额外操作。'],
+ ['收到结果，也留下前因后果。', '把收到的反馈与原来的建议放在一起，方便理解过程，也方便之后复盘。', '收到回执不等于已成交；状态表达应与实际含义一致。'],
 ];
-const statusNames = { reviewing: '研究中', blocked: '已拦截', unknown: 'unknown / 待对账', acknowledged: '已确认回执', reconciled: '已对账' };
+const statusNames = { reviewing: '处理中', blocked: '已暂停，等待新信息', unknown: '结果待核对', acknowledged: '已收到回执', reconciled: '已核对' };
 let flow = createState();
 let failure = makeFailure();
 let timer = null;
@@ -17,18 +18,18 @@ function renderFlow() {
  $('pipeline').replaceChildren(...stages.map((label, i) => {
   const li = document.createElement('li'); const n = document.createElement('span');
   n.className = 'stage-number'; n.textContent = `0${i + 1}`;
-  li.append(n, document.createTextNode(label));
+  li.append(n, document.createTextNode(stageLabels[i]));
   li.className = i < flow.step ? 'done' : i === flow.step ? (flow.status === 'blocked' ? 'current blocked' : 'current') : '';
   if (i === flow.step) li.setAttribute('aria-current', 'step');
   return li;
  }));
  let copy = stepCopy[flow.step];
- if (flow.status === 'blocked') copy = ['过期的数据，停在执行之前。', '研究结果仍然保留，但当前快照未通过新鲜度检查，模拟提交次数保持为零。', '刷新界面不等于刷新行情，历史数据不伪装成实时数据。'];
- if (flow.status === 'unknown') copy = ['响应丢失，先保留不确定。', '这次合成请求没有明确响应。系统保留 unknown，等待订单与账户证据。', '切换到「异常对账」，试试重复请求与补充证据。'];
- $('step-number').textContent = `STEP 0${flow.step + 1} / 05`;
+ if (flow.status === 'blocked') copy = ['内容还在，下一步先暂停。', '旧信息仍可查看，但它已不适合继续操作。页面解释原因，而不是清空内容或假装一切正常。', '让使用者同时知道：我还能看什么，现在还可以做什么。'];
+ if (flow.status === 'unknown') copy = ['没收到反馈，不等于没发生。', '这里明确表达“结果待核对”，而不是直接提示失败，减少再次点击带来的误操作。', '切换到「异常对账」，看看怎样让下一步更明确。'];
+ $('step-number').textContent = `第 ${flow.step + 1} 步 / 共 5 步`;
  ['step-title', 'step-description', 'step-boundary'].forEach((id, i) => $(id).textContent = copy[i]);
  $('scenario-hint').textContent = scenarios[flow.scenario].hint;
- $('event-log').replaceChildren(...flow.events.map((event, i) => { const li = document.createElement('li'); const n = document.createElement('span'); const text = document.createElement('span'); n.textContent = `0${i+1}`; text.textContent = event; li.append(n, text); return li; }));
+ $('event-log').replaceChildren(...flow.events.map((event, i) => { const li = document.createElement('li'); const n = document.createElement('span'); const text = document.createElement('span'); n.textContent = `0${i+1}`; text.textContent = event.replace('快照已冻结 · SYNTHETIC-001', '已保留当时的信息').replace('研究建议已记录 · 不持有执行权限', '已形成建议 · 尚未执行').replace('行情与账户边界校验通过', '当前条件允许继续').replace('订单意图已写入 · DEMO-INTENT-001', '本次操作已记录').replace('收到明确模拟回执', '已收到明确反馈').replace('响应含糊 · 保留 unknown，等待对账', '没有明确反馈 · 结果待核对').replace('数据已过期 · 执行闸门关闭', '信息已过期 · 暂停下一步'); li.append(n, text); return li; }));
  $('flow-status').textContent = statusNames[flow.status];
  $('submit-count').textContent = `模拟提交 ${flow.calls} 次`;
  const ended = flow.status !== 'reviewing';
@@ -44,9 +45,9 @@ $('autoplay').addEventListener('click', () => {
  timer = setInterval(() => { flow = advance(flow); renderFlow(); }, 1300);
 });
 function renderFailure() {
- $('reconcile-status').textContent = failure.status === 'reconciled' ? 'reconciled' : 'unknown';
+ $('reconcile-status').textContent = failure.status === 'reconciled' ? '已核对' : '结果待核对';
  $('reconcile-count').textContent = `${failure.calls} 次`;
- $('reconcile-explanation').textContent = failure.status === 'reconciled' ? '合成证据匹配同一订单。状态已收敛，模拟提交次数仍为 1。' : '结果尚不确定。系统保留 unknown，等待证据，而不是重新发起订单。';
+ $('reconcile-explanation').textContent = failure.status === 'reconciled' ? '已找回这次操作的结果。无需再次提交，也没有额外产生一次操作。' : '暂时没有明确反馈，先核对已有操作，而不是引导你再点一次。';
  $('reconcile').disabled = failure.status === 'reconciled';
  $('duplicate-result').textContent = failure.duplicateChecks ? `已识别 ${failure.duplicateChecks} 次重复请求；仍只有 ${failure.calls} 次模拟提交。` : '试着重复请求：提交次数应保持不变。';
 }
@@ -57,7 +58,7 @@ function renderFreshness() {
  const age = Number($('age').value); const quality = freshness(age);
  $('age-value').textContent = age;
  $('age').setAttribute('aria-valuetext', `${age} 秒，${quality.label}`);
- $('freshness-status').textContent = quality.label;
+ $('freshness-status').textContent = quality.allowed ? '信息仍在演示有效期' : '信息已过期，暂停下一步';
  $('freshness-status').classList.toggle('amber', !quality.allowed);
  $('execution-eligible').textContent = quality.allowed ? '允许' : '已拦截';
  $('freshness-explanation').textContent = quality.allowed ? '在演示的新鲜度范围内。' : '保留展示，暂停新执行。';
@@ -69,17 +70,17 @@ document.querySelectorAll('[data-view]').forEach(button => button.addEventListen
  document.querySelectorAll('.demo-panel').forEach(panel => panel.hidden = panel.id !== `${button.dataset.view}-panel`);
 }));
 const modules = {
- market: ['01','行情与快照','先保存当时看到的事实，再让分析发生。','记录数据来源、周期、复权方式、快照时间和质量状态，为研究提供一致的输入。','缺失就是缺失；补采历史数据不伪装成实时行情。',['Parquet','数据合同','时间语义']],
- research: ['02','模型与候选','让模型参与研究，不给它无边界的执行权限。','组织候选分析、跟踪观察与研究建议，并保留它们引用的快照和策略版本。','模型建议与执行权限分开；新的回复仍需经过当前数据和风险检查。',['模型适配器','结构化输出','候选生命周期']],
- execution: ['03','规划与执行','用明确规则，约束每一次模拟执行。','组合规划、账户检查、硬风控和订单意图持久化，由唯一执行服务调用模拟适配器。','先记录意图，再提交请求；unknown 先对账再决定后续动作。',['ExecutionService','幂等意图','执行权校验']],
- ledger: ['04','事务账本','实验与执行，各自留下完整记录。','SQLite 保存事务状态与事件；不同实验与模拟账户保持账本隔离，决策保留版本归属。','JSON 只用于交换；接口采用业务单位，避免暴露存储内部定标值。',['SQLite','SQLAlchemy','Alembic']],
- review: ['05','复盘与演进','记录结果，也保留当时为什么这样做。','关联决策与后续结果；策略改进创建新版本，逐级经过回放、影子验证与灰度门槛。','不拿未来信息改写过去，不把实验结果直接当作执行指令。',['结果归因','不可变版本','回放约束']],
- viewer: ['06','独立 Viewer','远程只看状态，本地继续掌握执行。','通过认证与字段白名单导出快照，单向传递给独立只读展示模块。','不直接连接交易账本或执行入口；真实快照仍是私密信息，本作品集从不加载它。',['单向快照','白名单','读写分离']],
+ market: ['01','先讲清依据','先解决“为什么”，再展示“是什么”。','单独给出结论会增加判断负担。把依据、阶段和下一步放在一起，比增加更多指标更有助于形成理解。','计划让试用者解释一条建议的依据与当前阶段，记录是否需要额外提示、在哪些信息间反复查找。',['问题假设','信息组织','待用户验证']],
+ research: ['02','分清建议与行动','防止“系统建议了”被误读成“系统已经做了”。','建议与执行在系统中本就分开，界面也应保留这个差别。宁可多解释一次阶段，也不让状态模糊带来错误预期。','计划给出一条研究建议，请试用者判断哪些动作已经发生、哪些仍待检查；观察是否把建议当作成交。',['心理模型','清楚的状态','待用户验证']],
+ execution: ['03','把异常说清楚','一个警报，应该回答“发生了什么”和“现在怎么办”。','把“明确失败”与“结果待核对”分开。结果不明确时保留进度、说明核对路径，而不是把重复操作变成默认选择。','原型已验证重复请求不增加模拟提交。下一步观察试用者是否理解待核对、是否仍会反复尝试提交。',['异常反馈','防止误操作','原型已走查']],
+ ledger: ['04','保留决策上下文','方便回头理解，而不只是追问最终结果。','结果与当时的信息、判断和操作阶段一起保留。避免只看最终状态时失去原因，也避免用后来的信息重解释当时的决定。','计划让试用者回看一条已结束流程，复述当时的依据、发生的动作和结果；记录找信息所需的路径与求助。',['可追溯','上下文','待用户验证']],
+ review: ['05','信息逐层展开','把更多细节留给真正需要它的人。','第一层回答当前发生什么、下一步是什么；取舍和系统边界再逐层展开。牺牲一次性展示的完整感，优先降低初次理解负担。','桌面与手机已做布局走查。下一步比较首次任务中是否频繁展开次级内容，再判断哪些信息值得上移。',['渐进披露','任务优先','布局已走查']],
+ viewer: ['06','隐私默认有边界','能展示产品，不等于要展示个人信息。','公开体验使用合成场景，真实账户与运行信息保持私有。将演示能力与真实连接分开，避免展示需求扩大数据暴露范围。','已检查公开文件与页面连接边界。下一步测试使用者能否明确分辨演示与真实环境，避免对权限和数据来源产生误解。',['隐私设计','场景隔离','公开内容已检查']],
 };
 document.querySelectorAll('[data-module]').forEach(button => button.addEventListener('click', () => {
  document.querySelectorAll('[data-module]').forEach(b => { const active = b === button; b.classList.toggle('active', active); b.setAttribute('aria-pressed', String(active)); });
  const [n, title, summary, responsibility, boundary, tags] = modules[button.dataset.module];
- $('module-number').textContent = `MODULE ${n}`; $('module-title').textContent = title; $('module-summary').textContent = summary; $('module-do').textContent = responsibility; $('module-boundary').textContent = boundary;
+ $('module-number').textContent = `DECISION ${n}`; $('module-title').textContent = title; $('module-summary').textContent = summary; $('module-do').textContent = responsibility; $('module-boundary').textContent = boundary;
  $('module-tech').replaceChildren(...tags.map(tag => { const span = document.createElement('span'); span.textContent = tag; return span; }));
 }));
 document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
