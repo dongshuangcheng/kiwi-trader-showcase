@@ -1,4 +1,4 @@
-# Only reviewed presentation files belong in this repository.
+# Public presentation files only. Keep this allowlist aligned with the audit script.
 *
 !.gitignore
 !README.md
@@ -11,3 +11,16 @@ assets/*
 docs/*
 !docs/engineering.md
 !docs/privacy.md
+!docs/design-notes.md
+!docs/index.html
+!docs/showcase.css
+!docs/showcase.js
+!docs/demo-model.mjs
+!docs/favicon.svg
+!docs/.nojekyll
+!tests/
+tests/*
+!tests/demo-model.test.mjs
+!scripts/
+scripts/*
+!scripts/check_public.py
