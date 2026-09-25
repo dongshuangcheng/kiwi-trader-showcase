@@ -66,5 +66,5 @@ for tag, link in parser.links:
     elif link.startswith('https://'):
         assert tag == 'a' and link.startswith('https://github.com/dongshuangcheng/kiwi-trader-showcase'), f'Unexpected remote dependency: {link}'
     else:
-        assert (ROOT / 'docs' / link).is_file(), f'Broken asset: {link}'
+        assert (ROOT / 'docs' / link.split('?')[0]).is_file(), f'Broken asset: {link}'
 print(f'PASS: {len(files)} allowlisted files; privacy patterns, links, SVG, CSP and no-network demo checks.')
